@@ -19,7 +19,14 @@ var Formulas = {
   'sin' : 'SIN_$1',
   'cos' : 'COS_$1',
   'tan' : 'TAN_$1',
-  'sqrt' : 'SQRT_$1'
+  'sqrt' : 'SQRT_$1',
+  'abs' : 'ABS_$1',
+  'atan' : 'ATAN_$1',
+  'exp' : 'EXP_$1',
+  'ln' : 'LN_$1',
+  'round' : 'ROUND_$1',
+  'min' : 'MIN_$1_$2',
+  'max' : 'MAX_$1_$2',
 };
 
 /****
@@ -49,6 +56,14 @@ var Calculator = {
       'assoc' : 'Left'
     },
     '+' : {
+      'prec' : 2,
+      'assoc' : 'Left'
+    },
+    '^' : {
+      'prec' : 2,
+      'assoc' : 'Left'
+    },
+    'mod' : {
       'prec' : 2,
       'assoc' : 'Left'
     },
@@ -161,6 +176,15 @@ var Calculator = {
     return Number(arg1.toString().replace(".", "")) / Number(arg2.toString().replace(".", "")) * Math.pow(10, r1 - r2);
   },
 
+  __pow : function(arg1, arg2) {
+
+    return Math.pow(arg1 , arg2) ;
+  },
+  __mod : function(arg1, arg2) {
+
+    return arg1 % arg2;
+  },
+
 
   /**
    * 计算结果
@@ -184,6 +208,12 @@ var Calculator = {
         break;
       case '/' :
         result = this.__div(fir, sec);
+        break;
+      case '^' :
+        result = this.__pow(fir, sec);
+        break;
+      case 'mod' :
+        result = this.__mod(fir, sec);
         break;
       default :
         result = -1;
@@ -212,16 +242,51 @@ var Calculator = {
 
     //如果是多个参数的话，通过_来切割的
     var arr = str.split('_'),
-      result, number;
+      result, number, number2;
 
     //这里并不考虑多个参数的
     number = this.calculate(arr[1]); //这个nest 令我觉得好有趣 ：），☺️！！！！！！！
+
+    if(!_.isUndefined(arr[2])) {
+      number2 = this.calculate(arr[2]);
+    }
 
     if(_.isNaN(number)) {
       throw new Error("unvalid number for formula special");
     }
 
-    switch(arr[0]) {
+    if(_.isUndefined(number2)) {
+      result = this.mathConvertOneParameter(arr[0], number);
+    }else{
+      if(_.isNaN(number2)) {
+        throw new Error("unvalid number for formula special");
+      }
+      result = this.mathConvertTwoParameters(arr[0], number, number2);
+    }
+
+
+    //这里保留5个精度 @todo 是否其他的最大精度也是5？
+    return parseFloat(result.toFixed(5));
+
+
+  },
+
+  mathConvertTwoParameters: function(funcName, number1, number2){
+    let result;
+    switch(funcName) {
+      case 'MIN':
+        result = Math.min(number1, number2);
+        break;
+      case 'MAX':
+        result = Math.max(number1, number2);
+        break;
+    }
+    return result;
+  },
+
+  mathConvertOneParameter: function(funcName, number){
+    let result;
+    switch(funcName) {
       case 'TAN' :
         number = Math.PI*2/360*number; //弧度计算
         result = Math.tan(number);
@@ -237,15 +302,24 @@ var Calculator = {
       case 'SQRT':
         result = Math.sqrt(number);
         break;
+      case 'ABS':
+        result = Math.abs(number);
+        break;
+      case 'ATAN':
+        result = Math.atan(number);
+        break;
+      case 'EXP':
+        result = Math.exp(number);
+        break;
+      case 'LN':
+        result = Math.log(number);
+        break;
+      case 'ROUND':
+        result = Math.round(number);
+        break;
     }
-
-
-    //这里保留5个精度 @todo 是否其他的最大精度也是5？
-    return parseFloat(result.toFixed(5));
-
-
+    return result;
   },
-
 
   /***
    * 计算后缀法的公式,并返回整个计算结果
@@ -254,6 +328,7 @@ var Calculator = {
    * @private
    */
   calculate : function(infix) {
+    infix = infix.toLowerCase();
     var postfixArray = this.shunt(infix),
       outputStack = [],
       cur, fir, sec, cur__temp;
@@ -575,6 +650,24 @@ var Calculator = {
     return true;
   },
 
+
+  getNextOperator: function(string, startIndex){
+    let operator = string[startIndex];
+    if (operator===undefined) {
+      return null;
+    }
+    let length = 1;
+
+    while (!this.isOperator(operator) && length<4){
+      operator+=string[startIndex+length];
+      length++;
+    }
+    if(length>=4){
+      return null;
+    }
+    return operator;
+  },
+
   /**
    * 将字符串转化成数组
    * @param infix
@@ -588,7 +681,7 @@ var Calculator = {
       throw new Error('error formula to convert please!');
     }
 
-    var infixArray = infix.split(/[\+\-\*\/]+/), //先把字符串里面的数据和符号区分开！没有运算符的数组
+    var infixArray = infix.split(/[\+\-\*\/\^]+|mod/), //先把字符串里面的数据和符号区分开！没有运算符的数组
       result = [],
       temp = [],
       flag = 0,
@@ -598,8 +691,9 @@ var Calculator = {
       temp = temp.concat(this.fixBrackets(infixArray[i]));
       //把运算符添加进去
       flag += flag === 0 ? infixArray[i].length : infixArray[i].length + 1;
-      if (!_.isUndefined(infix[flag])) {
-        temp.push(infix[flag]);
+      let operator = this.getNextOperator(infix, flag);
+      if (operator) {
+        temp.push(operator);
       }
     }
 

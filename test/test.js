@@ -234,9 +234,39 @@ describe('calculator', function () {
       expect(happycalculator.calculate(test_data)).to.equal(0.5);
     });
 
+    it("round(30.52) should return 31", function() {
+      var test_data = 'round(30.52)';
+      expect(happycalculator.calculate(test_data)).to.equal(31);
+    });
+
     it("cos(60) should return 0.5", function() {
       var test_data = 'cos(60)';
       expect(happycalculator.calculate(test_data)).to.equal(0.5);
+    });
+
+    it("2^3 should return 8", function() {
+      var test_data = '2^3';
+      expect(happycalculator.calculate(test_data)).to.equal(8);
+    });
+
+    it("12 mod 5 should return 2", function() {
+      var test_data = '12 mod 5';
+      expect(happycalculator.calculate(test_data)).to.equal(2);
+    });
+
+    it("Min(12, 4) should return 4", function() {
+      var test_data = 'Min(12, 4)';
+      expect(happycalculator.calculate(test_data)).to.equal(4);
+    });
+
+    it("Max(12, 4) should return 12", function() {
+      var test_data = 'Max(12, 4)';
+      expect(happycalculator.calculate(test_data)).to.equal(12);
+    });
+
+    it("Max(12+3, 100/4) should return 12", function() {
+      var test_data = 'Max(12+3, 100/4)';
+      expect(happycalculator.calculate(test_data)).to.equal(25);
     });
 
     it("cos(60+30) should return 0", function() {
